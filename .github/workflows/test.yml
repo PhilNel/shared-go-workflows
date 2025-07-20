@@ -1,0 +1,54 @@
+name: Test
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: false
+        type: string
+        default: "1.24"
+      working-directory:
+        required: false
+        type: string
+        default: "."
+      skip-cache:
+        required: false
+        type: boolean
+        default: false
+      coverage-threshold:
+        required: false
+        type: number
+        default: 80
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Tidy dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: go mod tidy
+
+      - name: Run tests
+        working-directory: ${{ inputs.working-directory }}
+        run: go test ./...
+
+      - name: Generate coverage report
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          go test -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o=coverage.html
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ${{ inputs.working-directory }}/coverage.html

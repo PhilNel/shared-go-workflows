@@ -1,0 +1,40 @@
+name: Lint and Format
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: false
+        type: string
+        default: "1.24"
+      working-directory:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Tidy dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: go mod tidy
+
+      - name: Format check
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          go fmt ./...
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Code is not formatted. Please run 'go fmt ./...'."
+            git diff
+            exit 1
+          fi
